@@ -1,7 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+
+	dbfunctions "example/MerchAPI/DbFunctions"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,7 +44,7 @@ func main() {
 	router.GET("/merch/:name", GetMerchByName)
 
 	//Using anonymous function
-	router.POST("/merch", func(c *gin.Context) {
+	/*{router.POST("/merch", func(c *gin.Context) {
 		var newMerch Merch
 
 		err := c.BindJSON(&newMerch)
@@ -51,7 +55,15 @@ func main() {
 		} else {
 			return
 		}
-	})
+	}) */
 
+	isDbConnect, err := dbfunctions.DBConnect()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if isDbConnect {
+		fmt.Println("Databse Connected")
+	}
 	router.Run("localhost:8080")
 }
