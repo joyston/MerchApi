@@ -1,12 +1,30 @@
 package dbfunctions
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 )
+
+type Merch struct {
+	Name     string  `json: "name"`
+	Price    float64 `json: "price"`
+	Type     string  `json: "type"`
+	Size     string  `json: "size"`
+	Quantity int64   `json: quantity`
+}
+
+// type Merch struct {
+// 	Name     string
+// 	Type     string
+// 	Price    float64
+// 	Size     string
+// 	Quantity int64
+// }
 
 var db *sql.DB
 
@@ -16,7 +34,7 @@ func DBConnect() (bool, error) {
 	cfg.Passwd = os.Getenv("DBPASS")
 	cfg.Net = "tcp"
 	cfg.Addr = "127.0.0.1:3306"
-	cfg.DBName = "recordings"
+	cfg.DBName = "merchandise"
 
 	// Get a database handle.
 	var err error
@@ -30,4 +48,62 @@ func DBConnect() (bool, error) {
 		return false, fmt.Errorf("DBConnect: error at db.Ping %v", pingErr)
 	}
 	return true, nil
+}
+
+func AddMerchToDb(merch Merch) (int64, error) {
+	//Error handler
+	fail := func(err error) (int64, error) {
+		return 0, fmt.Errorf("error in SaveMerchToDb: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tx, err := db.BeginTx(ctx, nil) //Using transaction since we have 2 inserts
+	if err != nil {
+		return fail(err)
+	}
+	defer tx.Rollback() //incase one insert fails
+
+	//Get merchId if available
+	row := tx.QueryRowContext(ctx, "Select id from merch where name=? and type=?", merch.Name, merch.Type)
+
+	var merchId int64
+	merchId = 0
+	if row.Scan(&merchId); err != nil {
+		if err == sql.ErrNoRows {
+			//Add merch if not available
+			result, err := tx.ExecContext(ctx, "Insert into merch (name, type, price) values (?,?,?)", merch.Name, merch.Type, merch.Price)
+			if err != nil {
+				return fail(err)
+			}
+			merchId, err = result.LastInsertId()
+			if err != nil {
+				return fail(err)
+			}
+		} else {
+			return fail(err)
+		}
+	}
+
+	var stockID int64
+	if merchId != 0 {
+		//Add stock
+		result, err := tx.ExecContext(ctx, "Insert into stock (merch_fkid, size, quantity) values (?,?,?)", merchId, merch.Size, merch.Quantity)
+		if err != nil {
+			return fail(err)
+		}
+
+		stockID, err = result.LastInsertId()
+		if err != nil {
+			return fail(err)
+		}
+
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fail(err)
+	}
+
+	return stockID, nil
 }

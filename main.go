@@ -11,9 +11,11 @@ import (
 )
 
 type Merch struct {
-	Name  string  `json: "name"`
-	Price float64 `json: "price"`
-	Type  string  `json: "type"`
+	Name     string  `json: "name"`
+	Price    float64 `json: "price"`
+	Type     string  `json: "type"`
+	Size     string  `json: "size"`
+	Quantity int64   `json: quantity`
 }
 
 var Data = []Merch{
@@ -35,6 +37,24 @@ func GetMerchByName(c *gin.Context) {
 		}
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Product does not exist"})
+}
+
+func PostMerchtoDb(c *gin.Context) {
+	var newMerch dbfunctions.Merch
+
+	err := c.BindJSON(&newMerch)
+
+	if err != nil {
+		stockId, err := dbfunctions.AddMerchToDb(newMerch)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if stockId != 0 {
+			c.IndentedJSON(http.StatusCreated, stockId)
+		}
+	} else {
+		return
+	}
 }
 
 func main() {
@@ -65,5 +85,7 @@ func main() {
 	if isDbConnect {
 		fmt.Println("Databse Connected")
 	}
+
+	router.POST("/addmerchtodb")
 	router.Run("localhost:8080")
 }
