@@ -44,7 +44,7 @@ func PostMerchtoDb(c *gin.Context) {
 
 	err := c.BindJSON(&newMerch)
 
-	if err != nil {
+	if err == nil {
 		stockId, err := dbfunctions.AddMerchToDb(newMerch)
 		if err != nil {
 			log.Fatal(err)
@@ -86,6 +86,6 @@ func main() {
 		fmt.Println("Databse Connected")
 	}
 
-	router.POST("/addmerchtodb")
+	router.POST("/addmerchtodb", PostMerchtoDb)
 	router.Run("localhost:8080")
 }

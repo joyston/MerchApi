@@ -70,7 +70,7 @@ func AddMerchToDb(merch Merch) (int64, error) {
 
 	var merchId int64
 	merchId = 0
-	if row.Scan(&merchId); err != nil {
+	if err := row.Scan(&merchId); err != nil {
 		if err == sql.ErrNoRows {
 			//Add merch if not available
 			result, err := tx.ExecContext(ctx, "Insert into merch (name, type, price) values (?,?,?)", merch.Name, merch.Type, merch.Price)
