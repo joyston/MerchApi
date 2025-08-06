@@ -27,6 +27,16 @@ func GetAllMerch(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, Data)
 }
 
+func GetAllMerchFromDb(c *gin.Context) {
+	data, err := dbfunctions.GetAllMerchWithQuantity()
+	if err != nil {
+		log.Fatal(err)
+		// handle for 0 rows
+	} else {
+		c.IndentedJSON(http.StatusOK, data)
+	}
+}
+
 func GetMerchByName(c *gin.Context) {
 	name := c.Param("name")
 
@@ -63,20 +73,6 @@ func main() {
 	router.GET("/allmerch", GetAllMerch)
 	router.GET("/merch/:name", GetMerchByName)
 
-	//Using anonymous function
-	/*{router.POST("/merch", func(c *gin.Context) {
-		var newMerch Merch
-
-		err := c.BindJSON(&newMerch)
-
-		if err == nil {
-			Data = append(Data, newMerch)
-			c.IndentedJSON(http.StatusCreated, Data)
-		} else {
-			return
-		}
-	}) */
-
 	isDbConnect, err := dbfunctions.DBConnect()
 	if err != nil {
 		log.Fatal(err)
@@ -86,6 +82,7 @@ func main() {
 		fmt.Println("Databse Connected")
 	}
 
+	router.GET("/merchwithquantity", GetAllMerchFromDb)
 	router.POST("/addmerchtodb", PostMerchtoDb)
 	router.Run("localhost:8080")
 }

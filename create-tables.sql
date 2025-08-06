@@ -13,3 +13,6 @@ CREATE TABLE `merchandise`.`merch` (
   `size` VARCHAR(45) NULL,
   `quantity` INT NULL,
   PRIMARY KEY (`id`));
+
+ALTER TABLE `merchandise`.`merch` 
+ADD COLUMN `color` VARCHAR(100) NULL AFTER `price`;
